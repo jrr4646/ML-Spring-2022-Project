@@ -1,0 +1,217 @@
+clear
+%Two group 1D diffusion
+
+L         = 437.58;  %total length of core
+n         = 10;       %Cells per assembly
+Assem     = 34;       %Number of assemblies
+N         = n*Assem; %Total cells for each energy group
+xH        = L/N;     %Width of each mesh cell
+
+syms initx(x)
+initx(x)  = L/2 - abs(x-L/2);    %initial conditions
+
+StartX    = 0;
+EndX      = L;
+x         = StartX:xH:EndX;
+StartTime = 0;
+EndTime   = 0.1;
+tH        = 0.001;
+TimeSteps = EndTime/tH;
+vt        = StartTime:tH:EndTime;
+
+xs = zeros(10,N); %cross sections for each cell from SCALE
+for i=1:N
+    if i>2*n && i<=(Assem-2)*n          %Fuel cell
+      xs(1,i)  = 0.550819;      %tot_1
+      xs(2,i)  = 1.41768;       %tot_2
+      xs(3,i)  = 0.220912;      %trans1
+      xs(4,i)  = 0.932959;      %trans2
+      xs(5,i)  = 0.00834417;    %nuf1
+      xs(6,i)  = 0.176236;      %nuf2
+      xs(7,i)  = 0.52276;       %s11
+      xs(8,i)  = 0.0173228;     %s12
+      xs(9,i)  = 0.00190548;    %s21
+      xs(10,i) = 1.29596;      %s22
+    else                                %water cell
+      xs(1,i)  = 0.67499;    %tot_1w
+      xs(2,i)  = 1.86142;    %tot_2w
+      xs(3,i)  = 0.173675;   %trans1w
+      xs(4,i)  = 1.11238;    %trans2w
+      xs(7,i)  = 0.646558;   %s11w
+      xs(8,i)  = 0.0295918;  %s12w
+      xs(9,i)  = 0.00219350; %s21w
+      xs(10,i) = 1.84778;    %s22w
+    end
+end
+
+DiffF    = zeros(1,N); %Fast Diffusion coef
+FF       = zeros(1,N); %Fast nuSigF coef
+RF       = zeros(1,N); %Fast sigRemov (sigT-self_scatter)
+DiffT    = zeros(1,N); %Thermal Diffusion coef
+FT       = zeros(1,N); %Thermal nuSigF coef
+RT       = zeros(1,N); %Thermal sigRemov (sigT-self_scatter)
+DownScat = zeros(1,N); %Downscatter 12
+UpScat   = zeros(1,N); %Upscatter 21
+for i=1:N
+  DiffF(i) = 1/(3*xs(3,i));
+  FF(i)    = xs(5,i);
+  RF(i)    = xs(1,i)-xs(7,i);
+  
+  DiffT(i) = 1/(3*xs(4,i)); 
+  FT(i)    = xs(6,i);
+  RT(i)    = xs(2,i)-xs(10,i);
+  
+  DownScat(i) = xs(8,i);
+  UpScat(i)   = xs(9,i);
+end
+
+gaussquad1 = 1;   %quad point for pos slope
+gaussquad2 = -1;  %quad point for neg slope
+
+DF     = zeros(N+1, N+1);  %stiffness matrix for (D*gradphi_j,gradphi_k)
+DT     = zeros(N+1,N+1);
+M      = zeros(N+1, N+1);  %mass matrix (phi_j,phi_k)
+FissF  = zeros(N+1, N+1);  %fission matrix (nusigF*phi_j,phi_k)
+FissT  = zeros(N+1, N+1); 
+RemovF = zeros(N+1, N+1);  %Removal matrix (sigR*phi_j,phi_k)
+RemovT = zeros(N+1, N+1);
+UpS    = zeros(N+1, N+1);  %Upscatter
+DownS  = zeros(N+1, N+1);  %Downscatter
+
+for i=2:N
+    %quad eval over both halves of piecewise
+    DF(i,i)     = xH*DiffF(i-1)*(gaussquad1)^2 + xH*DiffF(i)*(gaussquad2)^2;
+    DT(i,i)     = xH*DiffT(i-1)*(gaussquad1)^2 + xH*DiffT(i)*(gaussquad2)^2;
+    
+    M(i,i)      = xH/3 + xH/3; %Integral of x^2 and (2-x)^2
+
+    FissF(i,i)  = FF(i-1)*xH/3 + FF(i)*xH/3;
+ 
+    FissT(i,i)  = FT(i-1)*xH/3 + FT(i)*xH/3;
+    RemovF(i,i) = RF(i-1)*xH/3 + RF(i)*xH/3;
+    RemovT(i,i) = RT(i-1)*xH/3 + RT(i)*xH/3;
+    
+    UpS(i,i)    = UpScat(i-1)*xH/3+ UpScat(i)*xH/3;
+    DownS(i,i)  = DownScat(i-1)*xH/3 + DownScat(i)*xH/3;
+    for j=2:N
+    if abs(i-j)<2 && i ~= j
+      DF(i,j)     = DiffF(min(i,j))*(gaussquad1 * gaussquad2)*xH ;
+      DT(i,j)     = DiffT(min(i,j))*(gaussquad1 * gaussquad2)*xH ;
+      
+      M(i,j)      =  xH/6;  %Integral of x(1-x)
+         
+      FissF(i,j)  =  FF(min(i,j))*xH/6;
+      FissT(i,j)  =  FT(min(i,j))*xH/6;
+      RemovF(i,j) =  RF(min(i,j))*xH/6;
+      RemovT(i,j) =  RT(min(i,j))*xH/6;
+      
+      UpS(i,j)    = UpScat(min(i,j))*xH/6;
+      DownS(i,j)  = DownScat(min(i,j))*xH/6;
+    end
+   end
+end
+D = [DF, zeros(N+1,N+1);zeros(N+1,N+1),DT]; %Creating two group by blocks
+D = D(any(D,2),:); %trimming zeros
+D = D(:,any(D,1));
+
+M = [M, zeros(N+1,N+1);zeros(N+1,N+1),M];
+M = M(any(M,2),:); %trimming zeros
+M = M(:,any(M,1));
+
+F            = [FissF, FissT;zeros(N+1,N+1),zeros(N+1,N+1)];
+F(:,2*(N+1)) = [];
+F(:,1)       = [];
+F(2*(N+1),:) = [];
+F(1,:)       = [];
+F(:,N+2)     = [];
+F(:,N+1)     = [];
+F(N+2,:)     = [];
+F(N+1,:)     = [];
+
+S = [-RemovF, UpS; DownS,-RemovT];
+S = S(any(S,2),:); %trimming zeros
+S = S(:,any(S,1));
+
+V = zeros(2*(N-1),2*(N-1));   %velocity matrix
+
+for i=1:N-1
+    V(i,i)         =   1.38*10^9; %Fast in cm/s
+    V(i+N-1,i+N-1) =   2.2*10^5; %Thermal in cm/s
+end
+
+alphasoln      = zeros(2*N-2,1);          
+alphatotal     = zeros(2*N+2,TimeSteps+1);
+for i=1:N+1
+    alphasoln(i)     = double(initx(x(i)));
+    alphasoln(i+N+1) = double(initx(x(i)));
+end
+alphasoln = alphasoln(any(alphasoln,2),:); %trimming zeros
+alphasoln = alphasoln(:,any(alphasoln,1));
+ 
+P_unscaled    = (F*alphasoln)*200*xH*1.6022E-13;
+Scalingfactor = 40E3/sum(P_unscaled);            %Scaled to 40kW/cm^3
+alphasoln     = alphasoln*Scalingfactor;
+
+alphatotal(2:N,1) = alphasoln(1:N-1);      
+alphatotal(N+3:2*N+1,1) = alphasoln(N:2*N-2);  
+
+%Power iterate to find k init
+alphaguess    = zeros(2*(N-1),1);
+
+for i=1:length(alphaguess)
+    alphaguess(i) = rand;
+end
+
+invLHS = (D-S)\eye(2*(N-1));
+
+keff     = 1;
+k_tot    = zeros;
+k_tot(1) = keff;
+Q        = zeros(2*(N-1),1);
+P        = zeros(2*(N-1),1);
+error=1;
+i=2;
+while 1>=0
+if error<10^-8
+  break
+end
+Q    = 1/keff*F*alphaguess;
+L    = norm(Q(:,1),1);      %total fissions using old phi
+alphaguess  = invLHS*Q;     %finding new phi
+P    = F*alphaguess;
+P    = norm(P(:,1),1);      %total fissions using new phi
+keff = P/L; 
+k_tot(i) = keff;
+error = abs(k_tot(i)-k_tot(i-1));
+i=i+1;
+end
+B = M\eye(2*(N-1)); %inverse of mass matrix
+
+RHS = -D+S+1/keff*F;
+
+for i=1:TimeSteps %trapezoidal method for alpha
+alphasoln               = (eye(2*(N-1))-0.5*tH*B*V*RHS)\((eye(2*(N-1))+0.5*tH*B*V*RHS)*alphasoln);
+
+alphatotal(2:N,i+1)     = alphasoln(1:N-1);
+alphatotal(N+3:2*N+1,i+1) = alphasoln(N:2*N-2);  
+end
+
+figure()
+hold on
+plot(x,alphatotal(1:N+1,1))
+plot(x, alphatotal(1:N+1,TimeSteps+1))
+xlabel('x')
+ylabel('phi(x)')
+legend('phi(x,0)', "phi(x," + EndTime+")")
+title('Fast flux distribution')
+hold off
+
+figure()
+hold on
+plot(x,alphatotal(N+2:2*(N+1),1))
+plot(x, alphatotal(N+2:2*(N+1),TimeSteps+1))
+xlabel('x')
+ylabel('phi(x)')
+legend('phi(x,0)', "phi(x," + EndTime+")")
+title('Thermal flux distribution')
+hold off
