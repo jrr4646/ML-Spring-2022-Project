@@ -6,17 +6,20 @@ n         = 10;       %Cells per assembly
 Assem     = 34;       %Number of assemblies
 N         = n*Assem; %Total cells for each energy group
 xH        = L/N;     %Width of each mesh cell
+alpha     = 2;
+beta      = 2;
+G         = gamma(alpha)*gamma(beta)/(gamma(alpha+beta));
 
-syms initx(x)
-initx(x)  = L/2 - abs(x-L/2);    %initial conditions
+%f = @(x) L/2 - abs(x-L/2);    %initial conditions
+f = @(x) ((x/L)^(alpha-1)*(1-x/L)^(beta-1))/G;
 
 StartX    = 0;
 EndX      = L;
 x         = StartX:xH:EndX;
 StartTime = 0;
 EndTime   = 0.1;
-tH        = 0.001;
-TimeSteps = EndTime/tH;
+tH        = 10^-5;
+TimeSteps = int16(EndTime/tH);
 vt        = StartTime:tH:EndTime;
 
 xs = zeros(10,N); %cross sections for each cell from SCALE
@@ -142,8 +145,8 @@ end
 alphasoln      = zeros(2*N-2,1);          
 alphatotal     = zeros(2*N+2,TimeSteps+1);
 for i=1:N+1
-    alphasoln(i)     = double(initx(x(i)));
-    alphasoln(i+N+1) = double(initx(x(i)));
+    alphasoln(i)     = f(x(i));
+    alphasoln(i+N+1) = f(x(i));
 end
 alphasoln = alphasoln(any(alphasoln,2),:); %trimming zeros
 alphasoln = alphasoln(:,any(alphasoln,1));
@@ -185,24 +188,23 @@ k_tot(i) = keff;
 error = abs(k_tot(i)-k_tot(i-1));
 i=i+1;
 end
-B = M\eye(2*(N-1)); %inverse of mass matrix
-
+B   = M\eye(2*(N-1)); %inverse of mass matrix
 RHS = -D+S+1/keff*F;
-
+mat = (eye(2*(N-1))-0.5*tH*B*V*RHS)\(eye(2*(N-1))+0.5*tH*B*V*RHS);
 for i=1:TimeSteps %trapezoidal method for alpha
-alphasoln               = (eye(2*(N-1))-0.5*tH*B*V*RHS)\((eye(2*(N-1))+0.5*tH*B*V*RHS)*alphasoln);
-
-alphatotal(2:N,i+1)     = alphasoln(1:N-1);
+alphasoln                 = mat*alphasoln;
+alphatotal(2:N,i+1)       = alphasoln(1:N-1);
 alphatotal(N+3:2*N+1,i+1) = alphasoln(N:2*N-2);  
 end
 
 figure()
 hold on
 plot(x,alphatotal(1:N+1,1))
+plot(x, alphatotal(1:N+1,TimeSteps))
 plot(x, alphatotal(1:N+1,TimeSteps+1))
 xlabel('x')
 ylabel('phi(x)')
-legend('phi(x,0)', "phi(x," + EndTime+")")
+legend('phi(x,0)', 'one step prior',"phi(x," + EndTime+")")
 title('Fast flux distribution')
 hold off
 
@@ -212,6 +214,6 @@ plot(x,alphatotal(N+2:2*(N+1),1))
 plot(x, alphatotal(N+2:2*(N+1),TimeSteps+1))
 xlabel('x')
 ylabel('phi(x)')
-legend('phi(x,0)', "phi(x," + EndTime+")")
+legend('phi(x,0)',"phi(x," + EndTime+")")
 title('Thermal flux distribution')
 hold off
