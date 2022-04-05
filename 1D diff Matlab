@@ -7,19 +7,18 @@ Assem     = 34;       %Number of assemblies
 N         = n*Assem; %Total cells for each energy group
 xH        = L/N;     %Width of each mesh cell
 alpha     = 2;
-beta      = 2;
+beta      = 4;
 G         = gamma(alpha)*gamma(beta)/(gamma(alpha+beta));
 
-%f = @(x) L/2 - abs(x-L/2);    %initial conditions
 f = @(x) ((x/L)^(alpha-1)*(1-x/L)^(beta-1))/G;
 
 StartX    = 0;
 EndX      = L;
 x         = StartX:xH:EndX;
 StartTime = 0;
-EndTime   = 0.1;
-tH        = 10^-5;
-TimeSteps = int16(EndTime/tH);
+EndTime   = 0.0042;
+tH        = 2*10^-9;
+TimeSteps = int32(EndTime/tH);
 vt        = StartTime:tH:EndTime;
 
 xs = zeros(10,N); %cross sections for each cell from SCALE
@@ -191,29 +190,41 @@ end
 B   = M\eye(2*(N-1)); %inverse of mass matrix
 RHS = -D+S+1/keff*F;
 mat = (eye(2*(N-1))-0.5*tH*B*V*RHS)\(eye(2*(N-1))+0.5*tH*B*V*RHS);
+
+difference = zeros(2*N+2,TimeSteps+1);
 for i=1:TimeSteps %trapezoidal method for alpha
 alphasoln                 = mat*alphasoln;
 alphatotal(2:N,i+1)       = alphasoln(1:N-1);
 alphatotal(N+3:2*N+1,i+1) = alphasoln(N:2*N-2);  
+difference(:,i) = (alphatotal(:,i+1)-alphatotal(:,i))/10^13;
 end
 
 figure()
 hold on
-plot(x,alphatotal(1:N+1,1))
-plot(x, alphatotal(1:N+1,TimeSteps))
-plot(x, alphatotal(1:N+1,TimeSteps+1))
 xlabel('x')
 ylabel('phi(x)')
-legend('phi(x,0)', 'one step prior',"phi(x," + EndTime+")")
 title('Fast flux distribution')
+ylim([0 2E14])
+for i=1:1000
+    cla
+    plot(x,alphatotal(1:N+1,1),'r')
+    plot(x,alphatotal(1:N+1,i),'b')
+    pause(0.01);
+end
 hold off
 
 figure()
 hold on
-plot(x,alphatotal(N+2:2*(N+1),1))
-plot(x, alphatotal(N+2:2*(N+1),TimeSteps+1))
 xlabel('x')
 ylabel('phi(x)')
-legend('phi(x,0)',"phi(x," + EndTime+")")
 title('Thermal flux distribution')
+for i=1:TimeSteps
+    c = int32(mod(i,1000));
+    if c==1
+  cla
+  plot(x,alphatotal(N+2:2*(N+1),1),'r')
+  plot(x,alphatotal(N+2:2*(N+1),i),'b')
+  pause(0.01);
+    end
+end
 hold off
