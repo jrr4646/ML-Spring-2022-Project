@@ -253,7 +253,7 @@ title('Fast flux high order 60ns-30us')
 xlabel('time (s)')
 ylabel('distance(x)')
 zlabel('flux')
-%Low order Fast flux
+%Low order fast flux
 figure()
 surf(vt(1:30),x,Low(1:N+1,1:30)); shading interp, colormap(hot);
 title('Fast flux low order 0-60ns')
@@ -280,7 +280,7 @@ title('Thermal flux high order 60ns-30us')
 xlabel('time (s)')
 ylabel('distance(x)')
 zlabel('flux')
-%Low order Fast flux
+%Low order thermal flux
 figure()
 surf(vt(1:30),x,Low(N+2:2*(N+1),1:30)); shading interp, colormap(hot);
 title('Thermal flux low order 0-60ns')
@@ -359,18 +359,6 @@ for i=51:TimeSteps
    
 end
 hold off
-
-%High order Thermal flux
-figure()
-surfl(vt(1:30),x,alphatotal(N+2:2*(N+1),1:30)); shading interp, colormap(hot);
-figure()
-surfl(vt(31:TimeSteps+1),x,alphatotal(N+2:2*(N+1),31:TimeSteps+1)); shading interp, colormap(hot);
-
-%Low order Thermal flux
-figure()
-surfl(vt(1:30),x,Low(N+2:2*(N+1),1:30)); shading interp, colormap(hot);
-figure()
-surfl(vt(31:TimeSteps+1),x,Low(N+2:2*(N+1),31:TimeSteps+1)); shading interp, colormap(hot);
 
 %High order Thermal flux
 figure()
