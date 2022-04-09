@@ -205,17 +205,23 @@ alphasoln                 = mat*alphasoln;
 alphatotal(2:N,i+1)       = alphasoln(1:N-1);
 alphatotal(N+3:2*N+1,i+1) = alphasoln(N:2*N-2);  
 end
+writematrix(alphatotal, 'FOM_test.txt');
 
-[u,s,v] = svd(alphatotal);
+G = readmatrix('rSVD_15001.txt'); %15001x20     %Gaussian proj matrix
 
-figure()
-hold on
-semilogy(diag(s)/sum(diag(s)),'ko')
-hold off
+Y     = (alphatotal*alphatotal.')*alphatotal*G; %Rand subspace of FOM
 
-basis = 4;   %Number of orthogonal modes to take
+[Q1,R1] = qr(Y);
+Q1     = Q1(:,1:8);
 
-phi = u(:,1:basis);   %First two spatial modes
+B = Q1.'*alphatotal;
+
+[Uy,Sy,Vy] = svd(B);                            %SVD of subspace
+u = Q1*Uy;                                      %sing vectors back in high dim space
+
+basis = 8;   %Number of orthogonal modes to take
+
+phi = u(:,1:basis);   %Spatial modes as a basis
 phi(1,:) = 0;
 phi(2*(N+1),:)=0;
 phi = phi(any(phi,2),:); %trimming zeros
