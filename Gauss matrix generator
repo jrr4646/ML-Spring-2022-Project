@@ -1,0 +1,9 @@
+clear
+
+G = zeros(15001,20);
+for i=1:15001
+   for j=1:20
+     G(i,j) = normrnd(0,1);
+   end
+end
+writematrix(G, 'rSVD_15001.txt');
