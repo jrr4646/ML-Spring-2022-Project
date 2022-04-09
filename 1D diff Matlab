@@ -207,19 +207,18 @@ alphatotal(N+3:2*N+1,i+1) = alphasoln(N:2*N-2);
 end
 writematrix(alphatotal, 'FOM_test.txt');
 
-G = readmatrix('rSVD_15001.txt'); %15001x20     %Gaussian proj matrix
+basis = 8;   %Number of orthogonal modes to take
 
+G     = readmatrix('rSVD_15001.txt');           %15001x20 Gaussian proj matrix
 Y     = (alphatotal*alphatotal.')*alphatotal*G; %Rand subspace of FOM
 
 [Q1,R1] = qr(Y);
-Q1     = Q1(:,1:8);
+Q1     = Q1(:,1:basis);
 
 B = Q1.'*alphatotal;
 
 [Uy,Sy,Vy] = svd(B);                            %SVD of subspace
 u = Q1*Uy;                                      %sing vectors back in high dim space
-
-basis = 8;   %Number of orthogonal modes to take
 
 phi = u(:,1:basis);   %Spatial modes as a basis
 phi(1,:) = 0;
