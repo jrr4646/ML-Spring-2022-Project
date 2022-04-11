@@ -6,8 +6,6 @@ n         = 8;       %Cells per assembly
 Assem     = 34;      %Number of assemblies
 N         = n*Assem; %Total cells for each energy group
 xH        = L/N;     %Width of each mesh cell
-alpha     = 2;
-beta      = 2;
 
 f = @(x) 5*cos(pi*x/L)-2*cos(3*pi*x/L);
 
@@ -19,6 +17,7 @@ EndTime   = 0.00003;
 tH        = 2*10^-9;
 TimeSteps = int32(EndTime/tH);
 vt        = StartTime:tH:EndTime;
+print     = 10;
 
 xs = zeros(10,N); %cross sections for each cell from SCALE
 for i=1:N
@@ -158,19 +157,15 @@ Scalingfactor = 40E3/sum(P_unscaled);            %Scaled to 40kW/cm^3
 alphasoln     = alphasoln*Scalingfactor;
 u0            = u0*Scalingfactor;
 
-
 alphatotal(2:N,1) = alphasoln(1:N-1);      
 alphatotal(N+3:2*N+1,1) = alphasoln(N:2*N-2);  
 
 %Power iterate to find k init
 alphaguess    = zeros(2*(N-1),1);
-
 for i=1:length(alphaguess)
     alphaguess(i) = rand;
 end
-
-invLHS = (D-S)\eye(2*(N-1));
-
+invLHS   = (D-S)\eye(2*(N-1));
 keff     = 1;
 k_tot    = zeros;
 k_tot(1) = keff;
@@ -203,17 +198,16 @@ for i=1:TimeSteps %trapezoidal method for alpha
 alphasoln                 = mat*alphasoln;
 alphatotal(2:N,i+1)       = alphasoln(1:N-1);
 alphatotal(N+3:2*N+1,i+1) = alphasoln(N:2*N-2);  
-k = int32(mod(i,10));
+k = int32(mod(i,print));
 if k==0
 trim(2:N,(i-1)/10+1)      = alphasoln(1:N-1);      
 trim(N+3:2*N+1,(i-1)/10+1) = alphasoln(N:2*N-2); 
 end
 end
-writematrix(alphatotal, 'FOM_test.txt');
 
 basis = 8;   %Number of orthogonal modes to take
 
-G     = readmatrix('rSVD_15001.txt');           %15001x20 Gaussian proj matrix
+G     = readmatrix('rSVD_gauss.txt');           %1501x20 Gaussian proj matrix
 Y     = (alphatotal*alphatotal.')*alphatotal*G; %Rand subspace of FOM
 
 [Q1,R1] = qr(Y);
@@ -223,8 +217,7 @@ B = Q1.'*alphatotal;
 
 [Uy,Sy,Vy] = svd(B);                            %SVD of subspace
 u = Q1*Uy;                                      %sing vectors back in high dim space
-
-phi = u(:,1:basis);   %Spatial modes as a basis
+phi = u(:,1:basis);   %First two spatial modes
 phi(1,:) = 0;
 phi(2*(N+1),:)=0;
 phi = phi(any(phi,2),:); %trimming zeros
@@ -250,18 +243,21 @@ for i=1:TimeSteps
 end
 
 %High order fast flux
+vttrim  = StartTime:tH*print:EndTime;
+
 figure()
-surf(vt(1:30),x,alphatotal(1:N+1,1:30)); shading interp, colormap(hot);
+surf(vttrim(1:10),x,trim(1:N+1,1:10)); shading interp, colormap(hot);
 title('Fast flux high order 0-60ns')
 xlabel('time (s)')
 ylabel('distance(x)')
 zlabel('flux')
 figure()
-surf(vt(31:TimeSteps+1),x,alphatotal(1:N+1,31:TimeSteps+1)); shading interp, colormap(hot);
+surf(vttrim(11:TimeSteps/10+1),x,trim(1:N+1,11:TimeSteps/10+1)); shading interp, colormap(hot);
 title('Fast flux high order 60ns-30us')
 xlabel('time (s)')
 ylabel('distance(x)')
 zlabel('flux')
+
 %Low order fast flux
 figure()
 surf(vt(1:30),x,Low(1:N+1,1:30)); shading interp, colormap(hot);
@@ -302,7 +298,6 @@ title('Thermal flux low order 60ns-30us')
 xlabel('time (s)')
 ylabel('distance(x)')
 zlabel('flux')
-
 %{
 figure()
 hold on
@@ -321,7 +316,6 @@ for i=1:50
         xline(193.05)
         pause(0.03);
       end
-   
 end
 for i=51:TimeSteps
       c = int32(mod(i,50));
@@ -353,7 +347,6 @@ for i=1:50
         xline(193.05)
         pause(0.03);
       end
-   
 end
 for i=51:TimeSteps
       c = int32(mod(i,50));
@@ -368,7 +361,6 @@ for i=51:TimeSteps
    
 end
 hold off
-
 %High order Thermal flux
 figure()
 hold on
@@ -387,7 +379,6 @@ for i=1:TimeSteps
     end
 end
 hold off
-
 %Low order Thermal flux
 figure()
 hold on
