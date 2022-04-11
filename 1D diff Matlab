@@ -193,17 +193,21 @@ error = abs(k_tot(i)-k_tot(i-1));
 i=i+1;
 end
 
+trim = zeros(2*(N+1),(TimeSteps-1)/10+1);
+trim(:,1) = alphatotal(:,1);
+
 B   = M\eye(2*(N-1)); %inverse of mass matrix
-
-
 RHS = B*V*(-D+S+1/keff*F);
-
 mat = (eye(2*(N-1))-0.5*tH*RHS)\(eye(2*(N-1))+0.5*tH*RHS);
-
 for i=1:TimeSteps %trapezoidal method for alpha
 alphasoln                 = mat*alphasoln;
 alphatotal(2:N,i+1)       = alphasoln(1:N-1);
 alphatotal(N+3:2*N+1,i+1) = alphasoln(N:2*N-2);  
+k = int32(mod(i,10));
+if k==0
+trim(2:N,(i-1)/10+1)      = alphasoln(1:N-1);      
+trim(N+3:2*N+1,(i-1)/10+1) = alphasoln(N:2*N-2); 
+end
 end
 writematrix(alphatotal, 'FOM_test.txt');
 
