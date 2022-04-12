@@ -18,13 +18,12 @@ vt        = StartTime:tH:EndTime;
 print     = 5;                      %How often sol prints to matrix
 vttrim    = StartTime:tH*print:EndTime;
 
-
 trim = readmatrix('FOM_4.5.txt');
 u0   = readmatrix('u0_4.5.txt');
 RHS  = readmatrix('RHS_4.5.txt');
 size = size(trim);
 
-basis = 4;   %Number of orthogonal modes to take
+basis = 6;   %Number of orthogonal modes to take
 
 G = zeros(size(2),basis+10);
 for i=1:size(2)
@@ -40,7 +39,7 @@ B     = Q.'*trim;
 
 [Uy,Sy,Vy] = svd(B);  %SVD of subspace of snapshot matrix
 
-phi = Q*Uy;
+phi            = Q*Uy;
 phi(1,:)       = 0;
 phi(2*(N+1),:) = 0;
 
@@ -59,7 +58,7 @@ for i=1:basis
 Low(:,1) = Low(:,1) + u(:,i)*a(i);
 Lowtrim(:,1) = Lowtrim(:,1) + u(:,i)*a(i);
 end
-Low(1,:) = 0;
+Low(1,:)     = 0;
 Lowtrim(1,:) = 0;
 
 mat2 = (eye(basis)-0.5*tH*Rlo)\(eye(basis)+0.5*tH*Rlo);
@@ -80,11 +79,19 @@ if print==1
     Lowtrim(:,TimeSteps/print+2) = [];
 end
 
-difference = abs(trim-Lowtrim);
+diff   = abs(trim-Lowtrim);
+L2diff = zeros(1,size(2));
+L2trim = zeros(1,size(2));
+for i=1:size(2)
+    L2diff(i) = norm(diff(:,i))^2;
+    L2trim(i) = norm(trim(:,i))^2;
+end
+
+error = sqrt(sum(L2diff))/sqrt(sum(L2trim));
+
 disp("print every " + print + " timesteps");
 disp("Number of basis functions: " + basis);
-disp('Fro norm error from low order approx: ')
-disp(norm(difference,'fro')/norm(trim,'fro'));
+disp("L2 norm error from low order approx: " + error);
 
 %High order fast flux
 figure()
