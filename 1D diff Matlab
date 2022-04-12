@@ -17,7 +17,7 @@ EndTime   = 0.00003;
 tH        = 2*10^-9;
 TimeSteps = int32(EndTime/tH);
 vt        = StartTime:tH:EndTime;
-print     = 10;
+print     = 5;
 
 xs = zeros(10,N); %cross sections for each cell from SCALE
 for i=1:N
@@ -200,38 +200,53 @@ alphatotal(2:N,i+1)       = alphasoln(1:N-1);
 alphatotal(N+3:2*N+1,i+1) = alphasoln(N:2*N-2);  
 k = int32(mod(i,print));
 if k==0
-trim(2:N,(i-1)/10+1)      = alphasoln(1:N-1);      
-trim(N+3:2*N+1,(i-1)/10+1) = alphasoln(N:2*N-2); 
+   trim(2:N,(i-1)/print+1)       = alphatotal(2:N,i+1);
+   trim(N+3:2*N+1,(i-1)/print+1) = alphatotal(N+3:2*N+1,i+1);
+end   
 end
+if print==1
+    trim = [alphatotal(:,1) trim];
 end
 
-basis = 8;   %Number of orthogonal modes to take
+basis = 10;   %Number of orthogonal modes to take
 
-G     = readmatrix('rSVD_gauss.txt');           %1501x20 Gaussian proj matrix
+G = zeros(TimeSteps+1,basis+10);
+for i=1:TimeSteps+1
+   for j=1:basis+10
+     G(i,j) = normrnd(0,1);
+   end
+end
+
 Y     = (alphatotal*alphatotal.')*alphatotal*G; %Rand subspace of FOM
 
 [Q1,R1] = qr(Y);
-Q1     = Q1(:,1:basis);
+Q1      = Q1(:,1:basis);
 
 B = Q1.'*alphatotal;
 
 [Uy,Sy,Vy] = svd(B);                            %SVD of subspace
-u = Q1*Uy;                                      %sing vectors back in high dim space
-phi = u(:,1:basis);   %First two spatial modes
+                                   
+phi = Q1*Uy;
 phi(1,:) = 0;
 phi(2*(N+1),:)=0;
+
+a = (phi.')*u0; %Initial time coef
+u = phi;
+
 phi = phi(any(phi,2),:); %trimming zeros
 phi = phi(:,any(phi,1));
 
 Rlo = (phi.')*RHS*phi;
 
-a = ((u(:,1:basis)).')*u0; %Initial time coef
-
 Low      = zeros(2*(N+1),TimeSteps+1);  %Low order solution
+Lowtrim  = zeros(2*(N+1),TimeSteps/print+1);
+
 for i=1:basis
 Low(:,1) = Low(:,1) + u(:,i)*a(i);
+Lowtrim(:,1) = Lowtrim(:,1) + u(:,i)*a(i);
 end
 Low(1,:) = 0;
+Lowtrim(1,:) = 0;
 
 mat2 = (eye(basis)-0.5*tH*Rlo)\(eye(basis)+0.5*tH*Rlo);
 
@@ -240,64 +255,54 @@ for i=1:TimeSteps
     for j=1:basis
         Low(:,i+1) = Low(:,i+1) + u(:,j)*a(j);
     end
+    k = int32(mod(i,print));
+    if k==0
+      Lowtrim(2:N,(i-1)/print+1)       = Low(2:N,i+1);
+      Lowtrim(N+3:2*N+1,(i-1)/print+1) = Low(N+3:2*N+1,i+1);
+    end 
 end
-
-%High order fast flux
+if print==1
+    Lowtrim = [Low(:,1) Lowtrim];
+    Lowtrim(:,TimeSteps/print+2) = [];
+end
 vttrim  = StartTime:tH*print:EndTime;
 
-figure()
-surf(vttrim(1:10),x,trim(1:N+1,1:10)); shading interp, colormap(hot);
-title('Fast flux high order 0-60ns')
-xlabel('time (s)')
-ylabel('distance(x)')
-zlabel('flux')
-figure()
-surf(vttrim(11:TimeSteps/10+1),x,trim(1:N+1,11:TimeSteps/10+1)); shading interp, colormap(hot);
-title('Fast flux high order 60ns-30us')
-xlabel('time (s)')
-ylabel('distance(x)')
-zlabel('flux')
+difference = abs(trim-Lowtrim);
+disp("print every " + print + " timesteps");
+disp("Number of basis functions: " + basis);
+disp('Fro norm error from low order approx: ')
+disp(norm(difference,'fro')/norm(trim,'fro'));
 
+%High order fast flux
+figure()
+surf(vttrim,x,trim(1:N+1,:)); shading interp, colormap(hot);
+title('Fast flux high order')
+xlabel('time (s)')
+ylabel('distance(x)')
+zlabel('flux')
 %Low order fast flux
 figure()
-surf(vt(1:30),x,Low(1:N+1,1:30)); shading interp, colormap(hot);
-title('Fast flux low order 0-60ns')
-xlabel('time (s)')
-ylabel('distance(x)')
-zlabel('flux')
-figure()
-surf(vt(31:TimeSteps+1),x,Low(1:N+1,31:TimeSteps+1)); shading interp, colormap(hot);
-title('Fast flux low order 60ns-30us')
+surf(vttrim,x,Lowtrim(1:N+1,:)); shading interp, colormap(hot);
+title('Fast flux low order')
 xlabel('time (s)')
 ylabel('distance(x)')
 zlabel('flux')
 
 %High order thermal flux
 figure()
-surf(vt(1:30),x,alphatotal(N+2:2*(N+1),1:30)); shading interp, colormap(hot);
-title('Thermal flux high order 0-60ns')
-xlabel('time (s)')
-ylabel('distance(x)')
-zlabel('flux')
-figure()
-surf(vt(31:TimeSteps+1),x,alphatotal(N+2:2*(N+1),31:TimeSteps+1)); shading interp, colormap(hot);
-title('Thermal flux high order 60ns-30us')
+surf(vttrim,x,trim(N+2:2*(N+1),:)); shading interp, colormap(hot);
+title('Thermal flux high order')
 xlabel('time (s)')
 ylabel('distance(x)')
 zlabel('flux')
 %Low order thermal flux
 figure()
-surf(vt(1:30),x,Low(N+2:2*(N+1),1:30)); shading interp, colormap(hot);
-title('Thermal flux low order 0-60ns')
+surf(vttrim,x,Lowtrim(N+2:2*(N+1),:)); shading interp, colormap(hot);
+title('Thermal flux low order')
 xlabel('time (s)')
 ylabel('distance(x)')
 zlabel('flux')
-figure()
-surf(vt(31:TimeSteps+1),x,Low(N+2:2*(N+1),31:TimeSteps+1)); shading interp, colormap(hot);
-title('Thermal flux low order 60ns-30us')
-xlabel('time (s)')
-ylabel('distance(x)')
-zlabel('flux')
+
 %{
 figure()
 hold on
