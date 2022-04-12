@@ -354,9 +354,18 @@ Q1      = Q1(:,1:basis);
 B       = Q1.'*Snapshot;
 
 [Uy,Sy,Vy] = svd(B);  %SVD of subspace of snapshot matrix
+UN         = Q1*Uy;
 
-UN      = Q1*Uy;
-S_train = UN.'*Snapshot;  %Training data for CAE
+size     = size(Snapshot);
+Permut   = randperm(size(2));
+Shuffled = zeros(size(1),size(2));
+for i=1:size(2)
+    Shuffled(:,i) = Snapshot(:,Permut(i));  %Shuffling snapshot matrix
+end
+
+S_train = UN.'*Shuffled;  %Training data for CAE
+S_train = S_train.';      %making time in rows for keras Conv_1D
+writematrix(S_train, 'S_train.txt');  %Shuffled data in intrinsic coord
 
 figure()
 hold on
@@ -365,8 +374,8 @@ hold off
 
 figure()
 hold on
-plot(x,phi(1:N+1,1))
-plot(x,phi(1:N+1,2))
+plot(x,UN(1:N+1,1))
+plot(x,UN(1:N+1,2))
 legend('1','2')
 title('First two sing vectors for fast flux snapshot matrix')
 hold off
