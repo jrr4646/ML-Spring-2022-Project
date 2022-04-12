@@ -17,7 +17,7 @@ EndTime   = 0.00003;
 tH        = 2*10^-9;
 TimeSteps = int32(EndTime/tH);
 vt        = StartTime:tH:EndTime;
-print     = 5;
+print     = 5;                         %How often sol prints to snapshot matrix
 
 xs = zeros(10,N); %cross sections for each cell from SCALE
 for i=1:N
