@@ -24,7 +24,7 @@ u0   = readmatrix('u0_4.5.txt');
 RHS  = readmatrix('RHS_4.5.txt');
 size = size(trim);
 
-basis = 30;   %Number of orthogonal modes to take
+basis = 4;   %Number of orthogonal modes to take
 
 G = zeros(size(2),basis+10);
 for i=1:size(2)
@@ -116,37 +116,33 @@ xlabel('time (s)')
 ylabel('distance(x)')
 zlabel('flux')
 
-%{
 figure()
 hold on
 xlabel('x')
 ylabel('phi(x)')
 title('Fast flux high order')
 ylim([0 1.5E14])
-for i=1:50
-      %c = int32(mod(i,100));
-      c=1;
-      if c==1
+for i=1:10
         cla
-        plot(x,alphatotal(1:N+1,1),'r')
-        plot(x,alphatotal(1:N+1,i),'b')
+        plot(x,trim(1:N+1,1),'r')
+        plot(x,trim(1:N+1,i),'b')
         xline(-193.05)
         xline(193.05)
-        pause(0.03);
-      end
+        pause(0.5);
 end
-for i=51:TimeSteps
-      c = int32(mod(i,50));
-      if c==1
-        cla
-        plot(x,alphatotal(1:N+1,1),'r')
-        plot(x,alphatotal(1:N+1,i),'b')
-        xline(-193.05)
-        xline(193.05)
-        pause(0.01);
-      end
+for i=11:TimeSteps/print+1
+  c = int32(mod(i,10));
+  if c==1
+    cla
+    plot(x,trim(1:N+1,1),'r')
+    plot(x,trim(1:N+1,i),'b')
+    xline(-193.05)
+    xline(193.05)
+    pause(0.001);
+  end
 end
 hold off
+
 %Low Order fast flux
 figure()
 hold on
@@ -154,48 +150,45 @@ xlabel('x')
 ylabel('phi(x)')
 title('Fast flux low order')
 ylim([0 1.5E14])
-for i=1:50
-      %c = int32(mod(i,100));
-      c=1;
-      if c==1
+for i=1:10
         cla
-        plot(x,Low(1:N+1,1),'r')
-        plot(x,Low(1:N+1,i),'b')
+        plot(x,Lowtrim(1:N+1,1),'r')
+        plot(x,Lowtrim(1:N+1,i),'b')
         xline(-193.05)
         xline(193.05)
-        pause(0.03);
-      end
+        pause(0.5);
 end
-for i=51:TimeSteps
-      c = int32(mod(i,50));
-      if c==1
-        cla
-        plot(x,Low(1:N+1,1),'r')
-        plot(x,Low(1:N+1,i),'b')
-        xline(-193.05)
-        xline(193.05)
-        pause(0.01);
-      end
-   
+for i=11:TimeSteps/print+1
+  c = int32(mod(i,10));
+  if c==1
+    cla
+    plot(x,Lowtrim(1:N+1,1),'r')
+    plot(x,Lowtrim(1:N+1,i),'b')
+    xline(-193.05)
+    xline(193.05)
+    pause(0.001);
+  end
 end
 hold off
+
 %High order Thermal flux
 figure()
 hold on
 xlabel('x')
 ylabel('phi(x)')
 title('Thermal flux high order')
-for i=1:TimeSteps
-    c = int32(mod(i,50));
+for i=1:TimeSteps/print+1
+    c = int32(mod(i,10));
     if c==1
   cla
-  plot(x,alphatotal(N+2:2*(N+1),1),'r')
-  plot(x,alphatotal(N+2:2*(N+1),i),'b')
+  plot(x,trim(N+2:2*(N+1),1),'r')
+  plot(x,trim(N+2:2*(N+1),i),'b')
   xline(-193.05)
   xline(193.05)
-  pause(0.02);
+  pause(0.001);
     end
 end
+
 hold off
 %Low order Thermal flux
 figure()
@@ -203,16 +196,15 @@ hold on
 xlabel('x')
 ylabel('phi(x)')
 title('Thermal flux low order')
-for i=1:TimeSteps
-    c = int32(mod(i,50));
+for i=1:TimeSteps/print+1
+    c = int32(mod(i,10));
     if c==1
   cla
-  plot(x,Low(N+2:2*(N+1),1),'r')
-  plot(x,Low(N+2:2*(N+1),i),'b')
+  plot(x,Lowtrim(N+2:2*(N+1),1),'r')
+  plot(x,Lowtrim(N+2:2*(N+1),i),'b')
   xline(-193.05)
   xline(193.05)
-  pause(0.02);
+  pause(0.001);
     end
 end
 hold off
-%}
