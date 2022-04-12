@@ -353,10 +353,9 @@ Y       = (Snapshot*Snapshot.')*Snapshot*G; %Rand subspace of FOM
 Q1      = Q1(:,1:basis);
 B       = Q1.'*Snapshot;
 
-[Uy,Sy,Vy] = svd(B);  %SVD of subspace of snapshot matrix
+[UN,SN,VN] = svd(B);  %SVD of subspace of snapshot matrix
 
-phi     = Q1*Uy;
-S_train = phi.'*Snapshot;  %Training data for CAE
+S_train = UN.'*Snapshot;  %Training data for CAE
 
 figure()
 hold on
