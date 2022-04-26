@@ -1,0 +1,69 @@
+mport tensorflow as tf
+from tensorflow.keras.layers import Dense, Flatten, Reshape, Conv1D, MaxPooling1D, UpSampling1D, Conv1DTranspose
+from tensorflow.keras import Input
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Adam
+import pandas as pd
+import numpy as np
+from numpy import newaxis
+from tensorflow.keras.callbacks import TensorBoard
+import datetime
+import csv
+
+#log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+#tensorboard = TensorBoard(log_dir= log_dir, histogram_freq=1)
+
+data = pd.read_csv("S_train_log_normalized.csv", header=None, skiprows=[15005])
+data = pd.DataFrame(data)
+ds   = data.to_numpy()
+
+print("Input shape: \n")
+print(ds.shape)
+
+ds = ds[...,newaxis]
+
+print('\n Input row 1: \n')
+print(ds[0])
+
+input_shape = (20,1)
+
+encoder_input = Input(shape = input_shape)
+
+y = Conv1D(10,1, activation = 'tanh')(encoder_input) #20x10
+y = Conv1D(20,3,activation = 'tanh')(y) #18x20
+y = Conv1D(20,5,activation = 'tanh')(y) #14x20
+y = Conv1D(10,5,activation = 'tanh')(y) #10x10
+
+y = Flatten()(y) #100x1
+
+y = Dense(10, activation = 'tanh')(y) #10x1
+
+encoder_output = Dense(3, activation = 'tanh')(y) #3x1
+
+encoder = Model(inputs = encoder_input, outputs = encoder_output)
+
+decoder_input = encoder_output
+y = Dense(10, activation = 'tanh')(decoder_input) #10x1
+y = Dense(100, activation = 'tanh')(decoder_input) #100x1
+y = Reshape((10,10))(y) #10x10
+y = Conv1DTranspose(20,5, activation = 'tanh')(y) #14x20
+y = Conv1DTranspose(20,5, activation = 'tanh')(y) #18x20
+y = Conv1DTranspose(10,3, activation = 'tanh')(y) #20x10
+
+decoder_output = Conv1DTranspose(1,1, activation = None)(y) #20x1
+
+autoencoder = Model(encoder_input, decoder_output)
+#autoencoder.summary()
+
+opt = Adam(lr = 0.001, decay=1e-6)
+autoencoder.compile(opt, loss = 'mse')
+
+autoencoder.fit(ds,ds, epochs = 100, batch_size = 100)
+
+
+example = autoencoder.predict([ds[0].reshape(-1,20,1)])
+
+print('\n output of autoencoder for row 1: \n')
+print(example)
+
+np.savetxt('CNN_test.csv',example[0,...],delimiter=',')
