@@ -1,0 +1,61 @@
+clear
+
+L         = 437.58;  %total length of core
+n         = 8;       %Cells per assembly
+Assem     = 34;      %Number of assemblies
+N         = n*Assem; %Total cells for each energy group
+xH        = L/N;     %Width of each mesh cell
+
+StartX    = -L/2;
+EndX      = L/2;
+x         = StartX:xH:EndX;
+
+
+UN = csvread('U_N.csv');
+S_train = csvread('S_train_log_normalized.csv');
+Maxmin = csvread('Maxmin.csv');
+max = Maxmin(1);
+min = Maxmin(2);
+
+CNN = csvread('CNN_test.csv');
+CNN = CNN(any(CNN,2),:); 
+CNN = CNN(:,any(CNN,1));
+
+for i=1:15005
+   for j=1:20
+       S_train(i,j) = S_train(i,j)*(max-min)+min;
+       if S_train(i,j)<0
+           S_train(i,j) = -1*exp(-1*S_train(i,j));
+       else
+           S_train(i,j) = exp(S_train(i,j));
+       end
+   end
+end
+S_train = S_train.';
+FOM = UN*S_train(:,1);
+
+for i = 1:20
+    CNN(i) = CNN(i)*(max-min)+min;
+    if CNN(i)<0
+           CNN(i) = -1*exp(-1*CNN(i));
+    else
+           CNN(i) = exp(CNN(i));
+    end
+end
+Estimate = UN*CNN;
+
+figure()
+hold on
+plot(x,FOM(1:N+1,1))
+plot(x,Estimate(1:N+1,1))
+legend('FOM','Autoencoder output')
+title('Fast Flux')
+hold off
+
+figure()
+hold on
+plot(x,FOM(N+2:2*(N+1),1))
+plot(x,Estimate(N+2:2*(N+1),1))
+legend('FOM','Autoencoder output')
+title('Thermal Flux')
+hold off
