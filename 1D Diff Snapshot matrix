@@ -365,12 +365,37 @@ end
 
 S_train = UN.'*Shuffled;  %Training data for CAE
 S_train = S_train.';      %making time in rows for keras Conv_1D
-writematrix(S_train, 'S_train.txt');  %Shuffled data in intrinsic coord
 
+for i = 1:15005
+   for j=1:20
+       if S_train(i,j)<0
+           S_train(i,j) = -1*log(-1*S_train(i,j));
+       else
+           S_train(i,j) = log(S_train(i,j));
+       end
+   end
+end
+min = min(S_train(1,:));
+max = max(S_train(1,:));
+maxmin = max-min;
+Maxmin = [max min];
+
+for i=1:15005
+    for j=1:20
+        S_train(i,j) = (S_train(i,j)-min)/maxmin;
+    end 
+end
+
+writematrix(UN, 'U_N.csv'); %Singular vectors in space
+writematrix(S_train, 'S_train_log_normalized.csv');  %Shuffled data
+writematrix(Maxmin,'Maxmin.csv');
+
+%{
 figure()
 hold on
 plot(diag(Sy)/sum(diag(Sy)),'ko')
 hold off
+
 
 figure()
 hold on
@@ -379,3 +404,4 @@ plot(x,UN(1:N+1,2))
 legend('1','2')
 title('First two sing vectors for fast flux snapshot matrix')
 hold off
+%}
