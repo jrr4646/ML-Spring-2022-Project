@@ -415,7 +415,7 @@ min = -1.574E7;
 
 for i=1:15005
     for j=1:20
-        S_train(i,j) = (S_train(i,j)-min)/maxmin;
+        S_train(i,j) = (S_train(i,j)-min)/(max-min);
     end 
 end
 
