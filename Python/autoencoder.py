@@ -37,7 +37,6 @@ encoder_output = Dense(2, activation = 'relu')(y) #2x1
 
 encoder = Model(inputs = encoder_input, outputs = encoder_output)
 
-
 decoder_input = Input(shape = (2,))
 y = Dense(1280, activation = 'relu')(decoder_input) #1280x1
 y = Reshape((10,128))(y) #10x128
@@ -58,13 +57,9 @@ autoencoder = Model(inputs = FOM, outputs = Output)
 
 opt_1 = Adam(lr = 0.001, decay=1e-6)
 autoencoder.compile(opt_1, loss = 'mse')
-
 autoencoder.fit(ds,ds, epochs = 10, batch_size = 100, validation_split = 0.2)
 
-example = encoder.predict([ds[0].reshape(-1,20,1)])
-
 input_shape_DF = (2,1)
-
 DF_input = Input(shape = input_shape_DF)
 z = Flatten()(DF_input)
 z = Dense(100, activation = 'relu')(z)
@@ -76,18 +71,16 @@ DFNN = Model(inputs = DF_input, outputs = DF_output)
 
 opt_2 = Adam(lr = 0.0005, decay=1e-6)
 DFNN.compile(opt_2, loss = 'mse')
-
 DFNN.fit(M_param, encoder.predict(ds), epochs = 10, batch_size = 50)
 
-example2 = DFNN.predict([M_param[0].reshape(-1,2,1)])
+example  = encoder.predict([ds[0].reshape(-1,20,1)])  #latent space
+example2 = DFNN.predict([M_param[0].reshape(-1,2,1)]) #feed forward prediction of latent space
+example3 = decoder.predict(example2)                  #estimate of full order solution 
 
 print('encoder first row: ')
 print(example)
-
 print('DFNN output first row: ')
 print(example2)
-
-example3 = decoder.predict(example2)
 print('FOM from DFNN: ')
 print(example3)
 
