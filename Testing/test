@@ -18,9 +18,7 @@ S_train = S_train(:,any(S_train,1));
 max = -1.6918E15;
 min = -1.574E7;
 
-CNN = csvread('CNN_test_nolog.csv');
-CNN = CNN(any(CNN,2),:); 
-CNN = CNN(:,any(CNN,1));
+CNN = csvread('DFNN_test.csv');
 for i=1:15005
    for j=1:20
        S_train(i,j) = S_train(i,j)*(max-min)+min;
