@@ -19,7 +19,7 @@ TimeSteps = int32(EndTime/tH);
 vt        = StartTime:tH:EndTime;
 print     = 5;                      %How often sol prints to snapshot matrix
 vttrim    = StartTime:tH*print:EndTime;
-snapshots = 5;
+snapshots = 6;
 
 for enrich=1:snapshots
 
@@ -141,6 +141,32 @@ for i=1:N
       xs(8,i)  = 0.0171097;     %s12
       xs(9,i)  = 0.00200092;    %s21
       xs(10,i) = 1.29496;       %s22
+    else                                %water cell
+      xs(1,i)  = 0.67499;    %tot_1w
+      xs(2,i)  = 1.86142;    %tot_2w
+      xs(3,i)  = 0.173675;   %trans1w
+      xs(4,i)  = 1.11238;    %trans2w
+      xs(7,i)  = 0.646558;   %s11w
+      xs(8,i)  = 0.0295918;  %s12w
+      xs(9,i)  = 0.00219350; %s21w
+      xs(10,i) = 1.84778;    %s22w
+    end
+end
+
+elseif enrich==6   %3.7% enrichment  
+xs = zeros(10,N); 
+for i=1:N
+    if i>2*n && i<=(Assem-2)*n          %Fuel cell
+      xs(1,i)  = 0.551521;      %tot_1
+      xs(2,i)  = 1.40803;       %tot_2
+      xs(3,i)  = 0.221312;      %trans1
+      xs(4,i)  = 0.928916;      %trans2
+      xs(5,i)  = 0.00736013;    %nuf1
+      xs(6,i)  = 0.151396;      %nuf2
+      xs(7,i)  = 0.523589;      %s11
+      xs(8,i)  = 0.0176925;     %s12
+      xs(9,i)  = 0.00173988;    %s21
+      xs(10,i) = 1.29826;       %s22
     else                                %water cell
       xs(1,i)  = 0.67499;    %tot_1w
       xs(2,i)  = 1.86142;    %tot_2w
@@ -331,6 +357,8 @@ elseif enrich == 4
   writematrix(RHS, 'RHS_4.5.txt');
 elseif enrich == 5
   S5 = trim;
+elseif enrich==6
+writematrix(trim, 'FOM_3.7.csv')
 end
 end
 
@@ -339,6 +367,7 @@ M_param_35 = zeros(2,TimeSteps/print+1);
 M_param_40 = zeros(2,TimeSteps/print+1);
 M_param_45 = zeros(2,TimeSteps/print+1);
 M_param_50 = zeros(2,TimeSteps/print+1);
+M_param_37 = zeros(2,TimeSteps/print+1);
 
 for i=0:TimeSteps/print
     M_param_30(:,i+1) = [3.0 , vt(i*print+1)].';
@@ -346,6 +375,7 @@ for i=0:TimeSteps/print
     M_param_40(:,i+1) = [4.0 , vt(i*print+1)].';
     M_param_45(:,i+1) = [4.5 , vt(i*print+1)].';
     M_param_50(:,i+1) = [5.0 , vt(i*print+1)].';
+    M_param_37(:,i+1) = [3.7 , vt(i*print+1)].';
 end
 Snapshot = [S1 S2 S3 S4 S5];
 M_param  = [M_param_30 M_param_35 M_param_40 M_param_45 M_param_50];
@@ -392,6 +422,7 @@ end
 writematrix(UN, 'U_N.csv'); %Singular vectors in space
 writematrix(S_train, 'S_train_normalized.csv');  %Shuffled data
 writematrix(Shuffled_M, 'M.csv');
+writematrix(M_param_37, 'M_37.csv');
 
 %{
 figure()
