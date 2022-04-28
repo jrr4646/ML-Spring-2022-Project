@@ -320,21 +320,17 @@ end
 
 if enrich ==1
   S1 = trim;
-  writematrix(trim, 'FOM_3.0.txt');
 elseif enrich == 2
   S2 = trim;
-  writematrix(trim, 'FOM_3.5.txt');
 elseif enrich == 3
   S3 = trim;
-  writematrix(trim, 'FOM_4.0.txt');
 elseif enrich == 4
   S4 = trim;
-  writematrix(trim, 'FOM_4.5.txt');
+  writematrix(trim, 'FOM_4.5.txt'); %writing FOM for 4.5 case to show POD dynamics
   writematrix(u0, 'u0_4.5.txt');
   writematrix(RHS, 'RHS_4.5.txt');
 elseif enrich == 5
   S5 = trim;
-  writematrix(trim, 'FOM_5.0.txt');
 end
 end
 
