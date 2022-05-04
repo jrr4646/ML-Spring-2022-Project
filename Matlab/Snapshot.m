@@ -410,8 +410,8 @@ S_train = UN.'*Shuffled_S;  %Training data for CAE
 S_train = S_train.';      %making time in rows for keras Conv_1D
 Shuffled_M = Shuffled_M.';
 
-max = -1.6918E15;
-min = -1.574E7;
+max = 5.808805617696160E14;
+min = -1.836615412714180E15;
 
 for i=1:15005
     for j=1:64
