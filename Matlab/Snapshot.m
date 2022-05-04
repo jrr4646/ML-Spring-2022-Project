@@ -380,7 +380,7 @@ end
 Snapshot = [S1 S2 S3 S4 S5];
 M_param  = [M_param_30 M_param_35 M_param_40 M_param_45 M_param_50];
 
-basis = 20;   %Number of orthogonal modes to take
+basis = 64;   %Number of orthogonal modes to take
 
 G = zeros(snapshots*(TimeSteps/print+1),basis+10);
 for i=1:snapshots*(TimeSteps/print+1)
@@ -414,7 +414,7 @@ max = -1.6918E15;
 min = -1.574E7;
 
 for i=1:15005
-    for j=1:20
+    for j=1:64
         S_train(i,j) = (S_train(i,j)-min)/(max-min);
     end 
 end
